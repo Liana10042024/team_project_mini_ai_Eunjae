@@ -295,42 +295,82 @@ def show_main_page():
     st.write("Debug - End of show_main_page function")
 
 
-def show_search_page():
-    st.markdown("<h1 style='text-align: center;'>법률 판례 검색</h1>", unsafe_allow_html=True)
+def show_main_page():
+    st.markdown("""
+    <div class="main-content">
+        <h1>AI 기반 맞춤형 판례 검색 서비스</h1>
+        <p>당신의 상황에 가장 적합한 판례를 찾아드립니다</p>
+    </div>
+    """, unsafe_allow_html=True)
 
-    col1, col2 = st.columns([1, 3])
-
-    with col1:
-        st.markdown("<h5 style='font-weight: bold;'>법률 분야 선택</h5>", unsafe_allow_html=True)
-        legal_fields = ['민사', '가사', '형사A(생활형)', '형사B(일반형)', '행정', '기업', '근로자', '특허/저작권', '금융조세', '개인정보/ict', '잘모르겠습니다']
-        selected_fields = st.multiselect("", legal_fields)
-
-    with col2:
-        st.markdown("<h5 style='font-weight: bold;'>상황 설명</h5>", unsafe_allow_html=True)
-        st.write("아래 가이드라인을 참고하여 귀하의 법률 상황을 자세히 설명해주세요.")
-        
-        st.markdown("""
-        <div style='background-color: rgba(240, 240, 240, 0.9); padding: 10px; border-radius: 5px;'>
-        <h6 style='font-weight: bold;'>작성 가이드라인</h6>
+    st.markdown("""
+    <div class="usage-guide-container">
+        <div class="usage-guide-title">이용 방법</div>
+        <ul>
+            <li><strong>법률 분야 선택:</strong> 검색하고 싶은 법률의 분야를 선택하면 더 정확하게 나와요.</li>
+            <li><strong>상황 설명:</strong> 법률 문제를 최대한 자세히 작성해주세요.</li>
+            <li><strong>검색 실행:</strong> 날짜, 관련자, 사건 경과를 언급해주세요.</li>
+            <li><strong>결과 확인:</strong> 검색 버튼을 눌러 유사 판례를 확인하세요.</li>
+            <li><strong>재검색:</strong> 필요시 '재검색' 버튼을 눌러 새로운 검색을 시작하세요.</li>
+        </ul>
+    </div>
+    <div class="guide-container">
+        <div class="guide-title"><h2>작성 가이드라인</h2></div>
         <ol>
             <li>사건의 발생 시기와 장소를 명시해주세요.</li>
-            <li>관련된 사람들의 관계를 설명해주세요. (예: 고용주-직원, 판매자-구매자)</li>
-            <li>사건의 경과를 시간 순서대로 설명해주세요.</li>
-            <li>문제가 되는 행위나 상황을 구체적으로 설명해주세요.</li>
-            <li>현재 상황과 귀하가 알고 싶은 법률적 문제를 명확히 해주세요.</li>
+            <li>관련된 사람들의 관계를 설명해주세요.</li>
+            <li>사건의 경과를 시간 순서대로 작성해주세요.</li>
+            <li>문제가 되는 행위나 상황을 설명해주세요.</li>
+            <li>알고 싶은 법률적 문제를 명확히 해주세요.</li>
         </ol>
+        <div class="guide-example">
+            "2023년 3월 1일, 서울시 강남구의 한 아파트를 2년 계약으로 월세 100만원에 임대했습니다. 계약 당시 집주인과 구두로 2년 후 재계약 시 월세를 5% 이상 올리지 않기로 약속했습니다. 그러나 계약 만료 3개월 전인 2024년 12월, 집주인이 갑자기 월세를 150만원으로 50% 인상하겠다고 통보했습니다. 이를 거부하면 퇴거해야 한다고 합니다. 구두 약속은 법적 효력이 있는지, 그리고 이런 과도한 월세 인상이 법적으로 가능한지 알고 싶습니다."
         </div>
-        """, unsafe_allow_html=True)
+    </div>
+    <div class="button-container">
+        <button class="start-button" id="start-button">바로 시작</button>
+    </div>
+    """, unsafe_allow_html=True)
 
-        user_input = st.text_area("상황을 입력하세요:", height=200)
+    st.markdown("""
+    <script>
+    document.getElementById('start-button').addEventListener('click', function() {
+        window.parent.postMessage({type: 'streamlit:setComponentValue', value: true}, '*');
+    });
+    </script>
+    """, unsafe_allow_html=True)
 
-        if st.button("검색", key="search_button"):
-            if user_input and len(user_input) > 3:
-                st.session_state.user_input = user_input
-                st.session_state.selected_fields = selected_fields
-                st.session_state.page = "result"
-            else:
-                st.error("검색어가 없거나 너무 짧습니다")
+    if 'start_clicked' not in st.session_state:
+        st.session_state.start_clicked = False
+
+    # 숨겨진 Streamlit 버튼 클릭 여부 확인
+    if st.button("Start", key="start_button"):
+        st.session_state.start_clicked = True
+        st.experimental_rerun()  # 페이지 즉시 리프레시
+
+    # 상태 확인 및 페이지 전환
+    if st.session_state.start_clicked:
+        st.session_state.page = "search"
+        st.session_state.start_clicked = False
+        st.experimental_rerun()  # 페이지 즉시 리프레시
+
+def main():
+    local_css()
+    set_png_as_page_bg('static/photo.png')
+
+    if 'page' not in st.session_state:
+        st.session_state.page = "main"
+
+    if st.session_state.page == "main":
+        show_main_page()
+    elif st.session_state.page == "search":
+        show_search_page()
+    elif st.session_state.page == "result":
+        show_result_page()
+
+if __name__ == '__main__':
+    main()
+
 
 def show_result_page():
     st.markdown("<h1 style='text-align: center;'>판례 검색 결과</h1>", unsafe_allow_html=True)
