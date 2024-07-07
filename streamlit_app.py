@@ -81,6 +81,26 @@ def local_css():
         font-weight: bold;
         margin-bottom: 1rem;
     }
+    .button-container {
+        display: flex;
+        justify-content: center;
+        margin-top: 2rem;
+    }
+    .start-button {
+        background-color: #000;
+        color: #fff;
+        padding: 0.75rem 2rem;
+        font-size: 1.2rem;
+        font-weight: bold;
+        text-decoration: none;
+        border-radius: 25px;
+        border: none;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+    .start-button:hover {
+        background-color: #333;
+    }
     .search-button {
         background-color: #000;
         color: #fff;
@@ -90,6 +110,13 @@ def local_css():
         text-decoration: none;
         border-radius: 25px;
         display: inline-block;
+    }
+    .guide-example {
+        background-color: rgba(240, 240, 240, 0.9);
+        padding: 1rem;
+        border-radius: 5px;
+        margin-top: 1rem;
+        font-style: italic;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -231,10 +258,31 @@ def show_main_page():
             "2023년 3월 1일, 서울시 강남구의 한 아파트를 2년 계약으로 월세 100만원에 임대했습니다. 계약 당시 집주인과 구두로 2년 후 재계약 시 월세를 5% 이상 올리지 않기로 약속했습니다. 그러나 계약 만료 3개월 전인 2024년 12월, 집주인이 갑자기 월세를 150만원으로 50% 인상하겠다고 통보했습니다. 이를 거부하면 퇴거해야 한다고 합니다. 구두 약속은 법적 효력이 있는지, 그리고 이런 과도한 월세 인상이 법적으로 가능한지 알고 싶습니다."
         </div>
     </div>
+    <div class="button-container">
+        <button class="start-button" id="start-button">바로 시작</button>
+    </div>
     """, unsafe_allow_html=True)
 
-    if st.button("바로 시작", key="start_button"):
+    # JavaScript를 사용하여 버튼 클릭 이벤트 처리
+    st.markdown("""
+    <script>
+    document.getElementById('start-button').addEventListener('click', function() {
+        // Streamlit 컴포넌트에 메시지 전송
+        window.parent.postMessage({type: 'streamlit:setComponentValue', value: true}, '*');
+    });
+    </script>
+    """, unsafe_allow_html=True)
+
+    # Streamlit 버튼 (숨겨짐)
+    if st.button("Start", key="start_button", style="display:none;"):
         st.session_state.page = "search"
+        st.experimental_rerun()
+
+    # JavaScript에서 보낸 메시지 처리
+    if st.session_state.get('start_clicked', False):
+        st.session_state.page = "search"
+        st.session_state.start_clicked = False
+        st.experimental_rerun()
 
 def show_search_page():
     st.markdown("<h1 style='text-align: center;'>법률 판례 검색</h1>", unsafe_allow_html=True)
