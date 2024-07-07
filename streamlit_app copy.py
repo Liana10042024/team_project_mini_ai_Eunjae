@@ -1,15 +1,15 @@
 import streamlit as st
 import requests
-from sqlalchemy import create_engine, inspect
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy import create_engine, inspect, text, select
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
+from sqlalchemy.orm import sessionmaker
 from db_manager import Base, Case
 import re
 import logging
 import json
 import os
-from typing import List
+from typing import List, Tuple, Optional
 import gdown
 
 # Streamlit 설정
@@ -126,66 +126,49 @@ def get_vectorizer_and_matrix():
         return None, None, None
 
 def local_css():
-    custom_css = open("style2.css").read()
-    st.markdown(f"<style>{custom_css}</style>", unsafe_allow_html=True)
-
-def local_js():
-    custom_js = open("script.js").read()
-    st.markdown(f"<script>{custom_js}</script>", unsafe_allow_html=True)
+    st.markdown("""
+    <style>
+    body {
+        font-family: Arial, sans-serif;
+        line-height: 1.6;
+        color: #333;
+    }
+    .legal-term {
+        font-weight: bold;
+        color: #007bff;
+        cursor: help;
+        position: relative;
+    }
+    .legal-term:hover::after {
+        content: attr(data-tooltip);
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: #333;
+        color: #fff;
+        padding: 5px 10px;
+        border-radius: 5px;
+        font-size: 14px;
+        white-space: nowrap;
+        z-index: 1;
+    }
+    </style>
+    """, unsafe_allow_html=True)
 
 def highlight_legal_terms(text: str) -> str:
     terms = get_legal_terms()
     for term, explanation in terms.items():
         pattern = r'\b' + re.escape(term) + r'\b'
-        replacement = f'<span class="legal-term" data-toggle="tooltip" data-html="true" title="{explanation}">{term}</span>'
+        replacement = f'<span class="legal-term" data-tooltip="{explanation}">{term}</span>'
         text = re.sub(pattern, replacement, text)
     return text
 
 def show_main_page():
     st.title("AI 기반 맞춤형 판례 검색 서비스")
     st.write("당신의 상황에 가장 적합한 판례를 찾아드립니다")
-    st.image("static/photo.png", width=200)
 
-    st.markdown("""
-    <div class="usage-guide-container">
-        <div class="usage-guide">
-            <div class="usage-guide-title">이용 방법</div>
-            <div class="usage-guide-content">
-                <ul>
-                    <li><strong>법률 분야 선택:</strong> 검색하고 싶은 법률의 분야를 선택하면 더 정확하게 나와요.</li>
-                    <li><strong>상황 설명:</strong> 법률 문제를 최대한 자세히 작성해주세요.</li>
-                    <li><strong>검색 실행:</strong> 날짜, 관련자, 사건 경과를 언급해주세요.</li>
-                    <li><strong>결과 확인:</strong> 검색 버튼을 눌러 유사 판례를 확인하세요.</li>
-                    <li><strong>재검색:</strong> 필요시 '재검색' 버튼을 눌러 새로운 검색을 시작하세요.</li>
-                </ul>
-            </div>
-        </div>
-    </div>
-    <div class="guide-container">
-        <div class="guide-content">
-            <div class="guide-main">
-                <div class="guide-steps">
-                    <ol>
-                        <li>사건의 발생 시기와 장소를 명시해주세요.</li>
-                        <li>관련된 사람들의 관계를 설명해주세요.</li>
-                        <li>사건의 경과를 시간 순서대로 작성해주세요.</li>
-                        <li>문제가 되는 행위나 상황을 설명해주세요.</li>
-                        <li>알고 싶은 법률적 문제를 명확히 해주세요.</li>
-                    </ol>
-                </div>
-                <div class="guide-title">
-                    <h2>작성 가이드라인</h2>
-                    <div class="guide-example">
-                        "2023년 3월 1일, 서울시 강남구의 한 아파트를 2년 계약으로 월세 100만원에 임대했습니다. 계약 당시 집주인과 구두로 2년 후 재계약 시 월세를 5% 이상 올리지 않기로 약속했습니다. 그러나 계약 만료 3개월 전인 2024년 12월, 집주인이 갑자기 월세를 150만원으로 50% 인상하겠다고 통보했습니다. 이를 거부하면 퇴거해야 한다고 합니다. 구두 약속은 법적 효력이 있는지, 그리고 이런 과도한 월세 인상이 법적으로 가능한지 알고 싶습니다."
-                    </div>
-                </div>
-            </div>
-            <div class="search-button-container">
-                <a href="#" class="search-button">검색하러 가기</a>
-            </div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+    st.image("static/photo.png", width=200)
 
     if st.button("바로 시작"):
         st.session_state.page = "search"
@@ -277,7 +260,6 @@ def show_result_page():
 
 def main():
     local_css()
-    local_js()
 
     if 'page' not in st.session_state:
         st.session_state.page = "main"
