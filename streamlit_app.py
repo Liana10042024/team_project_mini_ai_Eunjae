@@ -263,26 +263,37 @@ def show_main_page():
     </div>
     """, unsafe_allow_html=True)
 
-    # JavaScript를 사용하여 버튼 클릭 이벤트 처리
+    # JavaScript 코드 추가
     st.markdown("""
     <script>
     document.getElementById('start-button').addEventListener('click', function() {
-        // Streamlit 컴포넌트에 메시지 전송
         window.parent.postMessage({type: 'streamlit:setComponentValue', value: true}, '*');
     });
     </script>
     """, unsafe_allow_html=True)
 
+    # 상태 관리 개선
+    if 'start_clicked' not in st.session_state:
+        st.session_state.start_clicked = False
+
     # Streamlit 버튼 (숨겨짐)
-    if st.button("Start", key="start_button", style="display:none;"):
+    button_clicked = st.button("Start", key="start_button")
+
+    if button_clicked:
+        st.session_state.start_clicked = True
         st.session_state.page = "search"
-        st.experimental_rerun()
+    
+    st.write(f"Debug - Current page state: {st.session_state.get('page', 'main')}")
+    st.write(f"Debug - Start button clicked: {st.session_state.get('start_clicked', False)}")
 
     # JavaScript에서 보낸 메시지 처리
-    if st.session_state.get('start_clicked', False):
+    if st.session_state.start_clicked:
         st.session_state.page = "search"
         st.session_state.start_clicked = False
         st.experimental_rerun()
+
+    st.write("Debug - End of show_main_page function")
+
 
 def show_search_page():
     st.markdown("<h1 style='text-align: center;'>법률 판례 검색</h1>", unsafe_allow_html=True)
