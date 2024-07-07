@@ -90,7 +90,8 @@ def check_db():
 
 @st.cache_resource
 def load_cases() -> List[Case]:
-    check_db()
+    if not check_db():
+        return []
     session = Session()
 
     logging.info("데이터베이스에서 판례 데이터 로딩 시작")
@@ -126,12 +127,14 @@ def get_vectorizer_and_matrix():
         return None, None, None
 
 def local_css():
-    custom_css = open("style2.css").read()
-    st.markdown(f"<style>{custom_css}</style>", unsafe_allow_html=True)
+    css_path = os.path.join('static', 'css', 'style2.css')
+    with open(css_path) as f:
+        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
 def local_js():
-    custom_js = open("script.js").read()
-    st.markdown(f"<script>{custom_js}</script>", unsafe_allow_html=True)
+    js_path = os.path.join('static', 'js', 'script.js')
+    with open(js_path) as f:
+        st.markdown(f"<script>{f.read()}</script>", unsafe_allow_html=True)
 
 def highlight_legal_terms(text: str) -> str:
     terms = get_legal_terms()
@@ -144,7 +147,7 @@ def highlight_legal_terms(text: str) -> str:
 def show_main_page():
     st.title("AI 기반 맞춤형 판례 검색 서비스")
     st.write("당신의 상황에 가장 적합한 판례를 찾아드립니다")
-    st.image("static/photo.png", width=200)
+    st.image(os.path.join('static', 'photo.png'), width=200)
 
     st.markdown("""
     <div class="usage-guide-container">
