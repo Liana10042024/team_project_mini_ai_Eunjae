@@ -118,6 +118,19 @@ def local_css():
         margin-top: 1rem;
         font-style: italic;
     }
+    /* Streamlit 버튼 숨기기 */
+    .stButton button {
+        display: none;
+    }
+    /* 디버그 정보 스타일 (개발 중에만 사용) */
+    .debug-info {
+        background-color: #f0f0f0;
+        padding: 10px;
+        border-radius: 5px;
+        margin-top: 20px;
+        font-size: 0.9em;
+        color: #666;
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -263,26 +276,39 @@ def show_main_page():
     </div>
     """, unsafe_allow_html=True)
 
-    # JavaScript를 사용하여 버튼 클릭 이벤트 처리
+    # JavaScript 코드 추가
     st.markdown("""
     <script>
     document.getElementById('start-button').addEventListener('click', function() {
-        // Streamlit 컴포넌트에 메시지 전송
         window.parent.postMessage({type: 'streamlit:setComponentValue', value: true}, '*');
+        setTimeout(function() {
+            window.parent.postMessage({type: 'streamlit:componentReady', value: true}, '*');
+        }, 100);
     });
     </script>
     """, unsafe_allow_html=True)
 
+    # 상태 관리 개선
+    if 'start_clicked' not in st.session_state:
+        st.session_state.start_clicked = False
+
     # Streamlit 버튼 (숨겨짐)
-    if st.button("Start", key="start_button", style="display:none;"):
+    if st.button("Start", key="start_button"):
+        st.session_state.start_clicked = True
         st.session_state.page = "search"
-        st.experimental_rerun()
+
+    # 디버깅을 위한 로그 추가
+    st.write(f"Debug - Current page state: {st.session_state.get('page', 'main')}")
+    st.write(f"Debug - Start button clicked: {st.session_state.get('start_clicked', False)}")
 
     # JavaScript에서 보낸 메시지 처리
-    if st.session_state.get('start_clicked', False):
+    if st.session_state.start_clicked:
         st.session_state.page = "search"
         st.session_state.start_clicked = False
         st.experimental_rerun()
+
+    # 추가 디버깅 정보
+    st.write("Debug - End of show_main_page function")
 
 def show_search_page():
     st.markdown("<h1 style='text-align: center;'>법률 판례 검색</h1>", unsafe_allow_html=True)
