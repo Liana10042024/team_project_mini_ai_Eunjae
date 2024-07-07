@@ -9,7 +9,7 @@ from db_manager import Base, Case
 import re
 import logging
 import json
-from typing import List
+from typing import List, Optional, Tuple
 import gdown
 import base64
 
@@ -216,12 +216,12 @@ def load_cases() -> List[Case]:
         session.close()
 
 @st.cache_resource
-def get_vectorizer_and_matrix():
+def get_vectorizer_and_matrix() -> Tuple[Optional[TfidfVectorizer], Optional[TfidfVectorizer], List[Case]]:
     try:
         cases = load_cases()
         if not cases:
             st.error("케이스 데이터가 비어 있습니다.")
-            return None, None, None
+            return None, None, []
 
         vectorizer = TfidfVectorizer()
         tfidf_matrix = vectorizer.fit_transform([case.summary for case in cases if case.summary])
@@ -229,7 +229,7 @@ def get_vectorizer_and_matrix():
     except Exception as e:
         logging.error(f"get_vectorizer_and_matrix 함수에서 오류 발생: {str(e)}")
         st.error(f"데이터 처리 중 오류가 발생했습니다: {str(e)}")
-        return None, None, None
+        return None, None, []
 
 def highlight_legal_terms(text: str) -> str:
     terms = get_legal_terms()
@@ -337,9 +337,9 @@ def show_search_page():
         </div>
         """, unsafe_allow_html=True)
 
-        user_input = st.text_area("상황을 입력하세요:", height=200)
+        user_input = st.text_area("상황 설명:", height=200)
 
-        if st.button("검색", key="search_button"):
+        if st.button("검색"):
             if user_input and len(user_input) > 3:
                 st.session_state.user_input = user_input
                 st.session_state.selected_fields = selected_fields
@@ -354,13 +354,11 @@ def show_result_page():
     selected_fields = st.session_state.selected_fields
 
     with st.spinner('판례를 검색 중입니다...'):
-        result = get_vectorizer_and_matrix()
-        if result is None or len(result) != 3:
-            st.error("데이터를 불러오는 데 실패했습니다. 관리자에게 문의해주세요.")
+        vectorizer, tfidf_matrix, cases = get_vectorizer_and_matrix()
+        if vectorizer is None or tfidf_matrix is None or cases is None:
+            st.error("판례 데이터를 로드하는데 실패했습니다. 다시 시도해주세요.")
             return
         
-        vectorizer, tfidf_matrix, cases = result
-
         if not selected_fields or '잘모르겠습니다' in selected_fields:
             filtered_cases = cases
             filtered_tfidf_matrix = tfidf_matrix
@@ -388,7 +386,7 @@ def show_result_page():
         st.markdown("<h3 style='font-weight: bold;'>답변</h3>", unsafe_allow_html=True)
         st.markdown(highlight_legal_terms(case.jdgmnAnswer), unsafe_allow_html=True)
 
-    if st.button("다시 검색하기", key="research_button"):
+    if st.button("다시 검색하기"):
         st.session_state.page = "search"
 
 def main():
